@@ -89,15 +89,35 @@ export class AuthService {
     }
 
     if (storedToken.expiresAt < new Date()) {
+      // token hết hạn --> xoá
+      await this.prisma.refreshToken.delete({
+        where: { token: refreshToken },
+      });
       throw new UnauthorizedException('Refresh token has expired');
     }
 
+    // 3. Rotation xoa token cũ
+    await this.prisma.refreshToken.delete({
+      where: { token: refreshToken },
+    });
+
+    // 4. Tạo refresh token mới
+    const newRefreshToken = generateRefreshToken();
+    await this.prisma.refreshToken.create({
+      data: {
+        token: newRefreshToken,
+        userId: storedToken.user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      },
+    });
+
+    // 5. Tạo access token mới
     const newAccessToken = this.jwtService.sign({
       sub: storedToken.user.id,
       email: storedToken.user.email,
       role: storedToken.user.role,
     });
 
-    return { accessToken: newAccessToken };
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 }
