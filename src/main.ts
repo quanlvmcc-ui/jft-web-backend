@@ -5,7 +5,11 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  // Cấu hình CORS cho phép frontend truy cập
+  app.enableCors({
+    origin: 'http://localhost:3001',
+    credentials: true,
+  });
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
