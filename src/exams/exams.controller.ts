@@ -27,7 +27,6 @@ export class ExamsController {
     @Req() request: RequestWithUser,
     @Body() createExamDto: CreateExamDto,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this.examsService.createExam(request.user.sub, createExamDto);
   }
 
@@ -50,6 +49,15 @@ export class ExamsController {
       examId,
       submitExamDto,
     );
+  }
+
+  @Post(':id/sessions')
+  @UseGuards(JwtAuthGuard)
+  startExamSession(
+    @Req() request: RequestWithUser,
+    @Param('id') examId: string,
+  ) {
+    return this.examsService.startSession(request.user.sub, examId);
   }
 
   @Get(':id')

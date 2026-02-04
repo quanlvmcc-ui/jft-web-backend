@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -12,6 +9,10 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+// ============================================
+// ENUMS
+// ============================================
 
 enum UserRole {
   USER
@@ -29,6 +30,22 @@ enum ExamSessionStatus {
   SUBMITTED
 }
 
+enum SectionType {
+  SCRIPT_VOCABULARY
+  CONVERSATION_EXPRESSION
+  LISTENING
+  READING
+}
+
+enum QuestionStatus {
+  DRAFT
+  ACTIVE
+}
+
+// ============================================
+// AUTH & RBAC
+// ============================================
+
 model User {
   id       String   @id @default(uuid())
   email    String   @unique
@@ -37,10 +54,15 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // soft delete
 
-  refreshToken RefreshToken[]
-  exams        Exam[]         @relation("UserExams")
-  examSessions ExamSession[]
+  refreshTokens RefreshToken[]
+  exams         Exam[]         @relation("CreatedExams")
+  examSessions  ExamSession[]
+  questions     Question[]     @relation("CreatedQuestions")
+  examSets      ExamSet[]      @relation("CreatedExamSets")
+
+  @@index([email])
 }
 
 model RefreshToken {
@@ -56,38 +78,169 @@ model RefreshToken {
   @@index([userId])
 }
 
-model Exam {
-  id          String  @id @default(uuid())
-  title       String
-  description String?
-  timeLimit   Int // in minutes
+// ============================================
+// QUESTION BANK (EDITOR)
+// ============================================
 
-  status ExamStatus @default(DRAFT)
+model Question {
+  id          String         @id @default(uuid())
+  sectionType SectionType // Phần thi: Script/Vocabulary, Conversation, Listening, Reading
+  contentHtml String         @db.Text // Nội dung câu hỏi (HTML)
+  explanationHtml String?    @db.Text // Giải thích đáp án
+  status      QuestionStatus @default(DRAFT)
 
   createdBy String
-  creator   User   @relation("UserExams", fields: [createdBy], references: [id])
+  creator   User   @relation("CreatedQuestions", fields: [createdBy], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
 
-  sessions ExamSession[]
+  options         QuestionOption[]
+  examQuestions   ExamQuestion[]
+  sessionAnswers  ExamSessionAnswer[]
+
+  @@index([sectionType])
+  @@index([status, deletedAt]) // Partial index cho active questions
 }
 
+model QuestionOption {
+  id          String  @id @default(uuid())
+  questionId  String
+  contentHtml String  @db.Text
+  isCorrect   Boolean @default(false)
+  orderNo     Int // Thứ tự hiển thị
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+// ============================================
+// EXAMS (ĐỀ THI)
+// ============================================
+
+model Exam {
+  id          String     @id @default(uuid())
+  title       String
+  description String?    @db.Text
+  timeLimit   Int // Thời gian làm bài (phút)
+  status      ExamStatus @default(DRAFT)
+
+  createdBy String
+  creator   User   @relation("CreatedExams", fields: [createdBy], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete
+
+  questions      ExamQuestion[]
+  sessions       ExamSession[]
+  examSetExams   ExamSetExam[]
+
+  @@index([status, deletedAt]) // Partial index cho published exams
+}
+
+model ExamQuestion {
+  id          String      @id @default(uuid())
+  examId      String
+  questionId  String
+  sectionType SectionType // Phần thi (để group)
+  orderNo     Int // Thứ tự trong đề
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([examId, questionId]) // Tránh trùng câu hỏi
+  @@index([examId, orderNo]) // Load cấu trúc đề theo thứ tự
+}
+
+// ============================================
+// EXAM SETS (TỔ CHỨC - KHÔNG CORE)
+// ============================================
+
+model ExamSet {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?  @db.Text
+  thumbnailUrl String?
+  status       ExamStatus @default(DRAFT)
+
+  createdBy String
+  creator   User   @relation("CreatedExamSets", fields: [createdBy], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  examSetExams ExamSetExam[]
+
+  @@index([status, deletedAt])
+}
+
+model ExamSetExam {
+  id        String @id @default(uuid())
+  examSetId String
+  examId    String
+  orderNo   Int
+
+  examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  exam    Exam    @relation(fields: [examId], references: [id])
+
+  @@unique([examSetId, examId])
+  @@index([examSetId, orderNo])
+}
+
+// ============================================
+// EXAM RUNTIME (CORE - UC-01)
+// ============================================
+
 model ExamSession {
-  id String @id @default(uuid())
+  id       String            @id @default(uuid())
+  userId   String
+  examId   String
+  status   ExamSessionStatus @default(IN_PROGRESS)
 
-  userId String
-  examId String
+  // Timing - quan trọng cho UC-01, UC-03
+  startTime  DateTime @default(now()) // Thời điểm bắt đầu
+  timeLimit  Int // Snapshot thời gian làm bài (phút) từ exam
 
-  status  ExamSessionStatus @default(IN_PROGRESS)
-  answers Json
+  // Summary results - chỉ có sau submit (UC-04)
+  totalCorrect    Int?
+  totalWrong      Int?
+  totalUnanswered Int?
 
   createdAt   DateTime  @default(now())
-  submittedAt DateTime?
+  submittedAt DateTime? // Thời điểm submit
+  deletedAt   DateTime? // soft delete
 
-  user User @relation(fields: [userId], references: [id])
-  exam Exam @relation(fields: [examId], references: [id])
+  user    User                @relation(fields: [userId], references: [id])
+  exam    Exam                @relation(fields: [examId], references: [id])
+  answers ExamSessionAnswer[]
 
   @@index([userId])
   @@index([examId])
+  @@index([userId, status]) // Partial index cho active sessions (UC-03)
+}
+
+model ExamSessionAnswer {
+  id        String @id @default(uuid())
+  sessionId String
+  questionId String
+
+  // Đáp án user chọn (UC-02)
+  selectedOptionId String?
+  answeredAt       DateTime?
+
+  // Snapshot & grading (UC-04)
+  isCorrect            Boolean?
+  questionSnapshotHtml String? @db.Text
+  optionsSnapshotJson  Json? // Array of options
+  correctOptionId      String?
+
+  session  ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id])
+
+  @@unique([sessionId, questionId]) // Mỗi câu 1 answer
+  @@index([sessionId]) // Load answers theo session
 }

@@ -22,9 +22,8 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify<JwtPayload>(token);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
       request.user = payload;
       return true;
     } catch {

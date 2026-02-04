@@ -85,10 +85,9 @@ export class AuthService {
     });
 
     // set cookie
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
     response.cookie('access_token', accessToken, accessTokenCookieOptions);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     response.cookie(
       'refresh_token',
       refreshToken,
@@ -134,7 +133,7 @@ export class AuthService {
     );
 
     // set cookie
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
     response.cookie('access_token', accessToken, accessTokenCookieOptions);
     response.cookie(
       'refresh_token',

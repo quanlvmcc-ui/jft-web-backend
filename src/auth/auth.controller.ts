@@ -24,7 +24,6 @@ export class AuthController {
 
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
     return this.authService.register(registerDto);
   }
 
@@ -49,7 +48,7 @@ export class AuthController {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+
     return this.authService.refresh(refreshToken, response);
   }
 
