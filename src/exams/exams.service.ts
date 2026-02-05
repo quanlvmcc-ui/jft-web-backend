@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateExamDto } from './dto/create-exam.dto';
-import { SubmitExamDto } from './dto/submit-exam.dto';
 import { SaveAnswerDto } from './dto/save-answer.dto';
 import { ExamSessionStatus } from '@prisma/client';
 
@@ -30,18 +29,24 @@ export class ExamsService {
     });
   }
 
-  async submitExam(
-    userId: string,
-    examId: string,
-    submitExamDto: SubmitExamDto,
-  ) {
+  async submitExam(userId: string, examId: string) {
     // Step 1: Find existing IN_PROGRESS session
 
     const session = await this.prisma.examSession.findFirst({
       where: {
         userId,
         examId,
-        status: ExamSessionStatus.IN_PROGRESS,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        answers: {
+          include: {
+            question: {
+              include: { options: true }, // ← Cần options
+            },
+          },
+        },
+        exam: true,
       },
     });
 
@@ -49,18 +54,71 @@ export class ExamsService {
       throw new NotFoundException('No active exam session found');
     }
 
+    // Step 1.5: Validate session ownership and status
+    if (session.userId !== userId) {
+      throw new NotFoundException('Session not found');
+    }
+
+    if (session.status !== ExamSessionStatus.IN_PROGRESS) {
+      throw new BadRequestException(
+        `Cannot submit session with status: ${session.status}`,
+      );
+    }
+
     // Step 2: Update session answers and submit in transaction
 
     return this.prisma.$transaction(async (tx) => {
+      let totalCorrect = 0;
+      let totalWrong = 0;
+      let totalUnanswered = 0;
+
       // Update each answer
-      for (const answer of submitExamDto.answers) {
-        await tx.examSessionAnswer.updateMany({
+      for (const answer of session.answers) {
+        // Get question, find correct option
+        const question = answer.question;
+
+        // Calculate isCorrect
+        const correctOption = question.options.find(
+          (option) => option.isCorrect,
+        );
+
+        if (!correctOption) {
+          throw new BadRequestException(
+            `Question ${question.id} has no correct option defined`,
+          );
+        }
+
+        if (answer.selectedOptionId === null) {
+          totalUnanswered++;
+        } else if (answer.selectedOptionId === correctOption.id) {
+          totalCorrect++;
+        } else {
+          totalWrong++;
+        }
+
+        // TODO: Create optionsSnapshot
+        const optionsSnapshot = question.options.map((option) => ({
+          id: option.id,
+          contentHtml: option.contentHtml,
+          isCorrect: option.isCorrect,
+        }));
+
+        // Update answer with grading + snapshots
+        await tx.examSessionAnswer.update({
           where: {
-            sessionId: session.id,
-            questionId: answer.questionId,
+            sessionId_questionId: {
+              sessionId: session.id,
+              questionId: answer.questionId,
+            },
           },
           data: {
-            selectedOptionId: answer.selectedOptionId,
+            isCorrect:
+              answer.selectedOptionId === null
+                ? null
+                : answer.selectedOptionId === correctOption.id,
+            questionSnapshotHtml: question.contentHtml,
+            optionsSnapshotJson: JSON.stringify(optionsSnapshot),
+            correctOptionId: correctOption.id,
           },
         });
       }
@@ -72,6 +130,9 @@ export class ExamsService {
         data: {
           status: ExamSessionStatus.SUBMITTED,
           submittedAt: new Date(),
+          totalCorrect,
+          totalWrong,
+          totalUnanswered,
         },
       });
     });

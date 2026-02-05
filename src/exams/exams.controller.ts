@@ -15,7 +15,6 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import type { RequestWithUser } from 'src/auth/types/request-with-user';
 import { CreateExamDto } from './dto/create-exam.dto';
-import { SubmitExamDto } from './dto/submit-exam.dto';
 import { SaveAnswerDto } from './dto/save-answer.dto';
 
 @Controller('exams')
@@ -41,16 +40,8 @@ export class ExamsController {
 
   @Post(':id/submit')
   @UseGuards(JwtAuthGuard)
-  submitExam(
-    @Req() request: RequestWithUser,
-    @Param('id') examId: string,
-    @Body() submitExamDto: SubmitExamDto,
-  ) {
-    return this.examsService.submitExam(
-      request.user.sub,
-      examId,
-      submitExamDto,
-    );
+  submitExam(@Req() request: RequestWithUser, @Param('id') examId: string) {
+    return this.examsService.submitExam(request.user.sub, examId);
   }
 
   /**

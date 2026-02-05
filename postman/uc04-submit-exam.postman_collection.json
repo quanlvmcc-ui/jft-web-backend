@@ -1,0 +1,149 @@
+{
+  "info": {
+    "name": "JFT UC-04 Submit Exam",
+    "_postman_id": "c1f3c1d0-2e6a-4f2d-9f8d-6f2a1a9a1d00",
+    "description": "Postman collection for UC-04 submit exam flow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "examId", "value": "" },
+    { "key": "sessionId", "value": "" },
+    { "key": "questionId1", "value": "" },
+    { "key": "optionId1", "value": "" },
+    { "key": "questionId2", "value": "" },
+    { "key": "optionId2", "value": "" },
+    { "key": "questionId3", "value": "" },
+    { "key": "optionId3", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"your_email@example.com\",\n  \"password\": \"your_password\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "02 - Start Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/exams/{{examId}}/sessions",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "{{examId}}", "sessions"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json && json.id) {",
+              "  pm.collectionVariables.set('sessionId', json.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Save Answer Q1",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"questionId\": \"{{questionId1}}\",\n  \"selectedOptionId\": \"{{optionId1}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/exams/sessions/{{sessionId}}/answers",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "sessions", "{{sessionId}}", "answers"]
+        }
+      }
+    },
+    {
+      "name": "04 - Save Answer Q2",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"questionId\": \"{{questionId2}}\",\n  \"selectedOptionId\": \"{{optionId2}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/exams/sessions/{{sessionId}}/answers",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "sessions", "{{sessionId}}", "answers"]
+        }
+      }
+    },
+    {
+      "name": "05 - Save Answer Q3 (null)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"questionId\": \"{{questionId3}}\",\n  \"selectedOptionId\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/exams/sessions/{{sessionId}}/answers",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "sessions", "{{sessionId}}", "answers"]
+        }
+      }
+    },
+    {
+      "name": "06 - Submit Exam",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/exams/{{examId}}/submit",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "{{examId}}", "submit"]
+        }
+      }
+    },
+    {
+      "name": "07 - Submit Exam (again) should fail",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/exams/{{examId}}/submit",
+          "host": ["{{baseUrl}}"],
+          "path": ["exams", "{{examId}}", "submit"]
+        }
+      }
+    }
+  ]
+}
