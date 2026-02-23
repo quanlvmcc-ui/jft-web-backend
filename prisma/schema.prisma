@@ -131,7 +131,7 @@ model Exam {
   id          String     @id @default(uuid())
   title       String
   description String?    @db.Text
-  timeLimit   Int // Thời gian làm bài (phút)
+  timeLimit   Int // Thời gian làm bài (GIÂY) - ví dụ: 1800 = 30 phút
   status      ExamStatus @default(DRAFT)
 
   createdBy String
@@ -230,7 +230,7 @@ model ExamSession {
 
   // Timing - quan trọng cho UC-01, UC-03
   startTime  DateTime @default(now()) // Thời điểm bắt đầu
-  timeLimit  Int // Snapshot thời gian làm bài (phút) từ exam
+  timeLimit  Int // Snapshot thời gian làm bài (GIÂY) từ exam - ví dụ: 1800 = 30 phút
 
   // Summary results - chỉ có sau submit (UC-04)
   totalCorrect    Int?
