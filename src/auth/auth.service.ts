@@ -85,6 +85,11 @@ export class AuthService {
     });
 
     // set cookie
+    console.log('🔐 Setting cookies:', {
+      NODE_ENV: process.env.NODE_ENV,
+      accessTokenCookieOptions,
+      refreshTokenCookieOptions: refreshTokenCookieOptions(refreshTokenExpiresAt),
+    });
 
     response.cookie('access_token', accessToken, accessTokenCookieOptions);
 
