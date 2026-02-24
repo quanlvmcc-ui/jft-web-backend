@@ -1,14 +1,14 @@
 import { CookieOptions } from 'express';
 
-// Cấu hình cookie cho môi trường dev: luôn gửi cookie khi khác port trên localhost
-// Cho production (cross-origin): secure=true, sameSite=none
-// Cho development (localhost): secure=false, sameSite=lax
+// Cookie configuration for cross-domain requests
+// For development (localhost): httpOnly, secure=false, sameSite=lax
+// For production (cross-domain): httpOnly, secure=true, sameSite=strict (browser limitation for cross-domain)
 const isProduction = process.env.NODE_ENV === 'production';
 
 export const baseAuthCookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: isProduction, // true cho production (HTTPS), false cho dev
-  sameSite: isProduction ? 'none' : 'lax', // 'none' cho cross-origin production, 'lax' cho dev
+  secure: isProduction, // true for production (HTTPS), false for dev
+  sameSite: 'strict', // Use 'strict' for all environments (safest)
   path: '/',
 };
 

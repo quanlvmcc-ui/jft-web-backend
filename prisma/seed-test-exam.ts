@@ -13,10 +13,11 @@ async function main() {
   console.log('🌱 Starting seed...');
 
   // 0. Create or find test user
+  // Password: password123 (for consistency across local, staging, production)
   const hashedPassword = await bcrypt.hash('password123', 10);
   const testUser = await prisma.user.upsert({
     where: { email: 'testuser2@example.com' },
-    update: {},
+    update: { password: hashedPassword }, // Update password if user exists
     create: {
       email: 'testuser2@example.com',
       password: hashedPassword,
