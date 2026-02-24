@@ -9,11 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ExamsService } from './exams.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { Role } from 'src/auth/enum/role.enum';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import type { RequestWithUser } from 'src/auth/types/request-with-user';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Role } from '../auth/enum/role.enum';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import type { RequestWithUser } from '../auth/types/request-with-user';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { SaveAnswerDto } from './dto/save-answer.dto';
 import { ApproveExamAccessDto } from './dto/approve-exam-access.dto';
