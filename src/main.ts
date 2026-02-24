@@ -6,11 +6,14 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Cấu hình CORS cho phép frontend truy cập
-  // Hỗ trợ multiple origins: local development, Render production, etc.
-  const corsOrigin =
-    process.env.CORS_ORIGIN?.split(',') || 'http://localhost:3001';
+  // Hỗ trợ multiple origins: local development, Render production, Netlify, etc.
+  const allowedOrigins = [
+    'http://localhost:3001', // Local development
+    'https://amazing-moxie-d28a64.netlify.app', // Netlify production
+    ...(process.env.CORS_ORIGIN?.split(',') || []),
+  ];
   app.enableCors({
-    origin: corsOrigin,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
