@@ -15,7 +15,7 @@ import {
   LoginBodySchema,
   LoginResponse,
   LoginResponseSchema,
-} from 'schemaValidations/auth.schema';
+} from '../schemaValidations/auth.schema';
 import type { Request, Response } from 'express';
 
 @Controller('auth')
