@@ -7,4 +7,5 @@ export interface RequestWithUser extends Request {
     email: string;
     role: Role;
   };
+  cookies: Record<string, any>;
 }
