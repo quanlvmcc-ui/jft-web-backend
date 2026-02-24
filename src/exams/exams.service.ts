@@ -78,6 +78,29 @@ export class ExamsService {
     });
   }
 
+  async getExamsForUser(userId: string) {
+    // Get all exams where user has APPROVED access and exam is PUBLISHED
+    return this.prisma.exam.findMany({
+      where: {
+        status: 'PUBLISHED',
+        accessList: {
+          some: {
+            userId,
+            status: EXAM_ACCESS_APPROVED,
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        timeLimit: true,
+        status: true,
+      },
+    });
+  }
+
   async approveExamAccess(examId: string, userId: string) {
     const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
     if (!exam) {

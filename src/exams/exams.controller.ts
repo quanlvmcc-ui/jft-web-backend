@@ -22,6 +22,12 @@ import { ApproveExamAccessDto } from './dto/approve-exam-access.dto';
 export class ExamsController {
   constructor(private readonly examsService: ExamsService) {}
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  getExams(@Req() request: RequestWithUser) {
+    return this.examsService.getExamsForUser(request.user.sub);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.EDITOR, Role.ADMIN)
