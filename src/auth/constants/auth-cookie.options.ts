@@ -1,12 +1,12 @@
 import { CookieOptions } from 'express';
 
-// Cookie configuration for cross-domain cookie sharing
-// sameSite: 'none' requires secure: true + HTTPS + proper CORS
-// This works for: Frontend (Netlify) → Backend (Render)
+// Cookie configuration per ChatGPT guidance
+// Production: sameSite=none (cross-domain), secure=true
+// Development: sameSite=lax (same-site), secure=false
 export const baseAuthCookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // true in production (HTTPS required)
-  sameSite: 'none', // Allow cross-domain cookies
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   path: '/',
 };
 
