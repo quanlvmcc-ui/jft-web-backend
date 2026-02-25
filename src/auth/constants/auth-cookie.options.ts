@@ -1,12 +1,12 @@
 import { CookieOptions } from 'express';
 
-// Cookie configuration
-// Production (Netlify to Render): use lax (safer than none)
-// Development (localhost): use lax
+// Cookie configuration for cross-domain cookie sharing
+// sameSite: 'none' requires secure: true + HTTPS + proper CORS
+// This works for: Frontend (Netlify) → Backend (Render)
 export const baseAuthCookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // HTTPS in prod
-  sameSite: 'lax', // Consistent across all environments
+  secure: process.env.NODE_ENV === 'production', // true in production (HTTPS required)
+  sameSite: 'none', // Allow cross-domain cookies
   path: '/',
 };
 
