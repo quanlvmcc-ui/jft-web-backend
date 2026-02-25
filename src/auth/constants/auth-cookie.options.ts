@@ -1,13 +1,16 @@
 import { CookieOptions } from 'express';
 
-// Cookie configuration per ChatGPT guidance
-// Production: sameSite=none (cross-domain), secure=true
-// Development: sameSite=lax (same-site), secure=false
+// Cookie configuration for custom domain
+// Production: sameSite=lax, secure=true, domain=.dichvumarketing.site
+// Development: sameSite=lax, secure=false
 export const baseAuthCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  sameSite: 'lax',
   path: '/',
+  ...(process.env.NODE_ENV === 'production' && {
+    domain: '.dichvumarketing.site',
+  }),
 };
 
 export const accessTokenCookieOptions: CookieOptions = {

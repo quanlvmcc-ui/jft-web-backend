@@ -11,6 +11,7 @@ async function bootstrap() {
     'http://localhost:3001', // Local development
     'https://amazing-moxie-d28a64.netlify.app', // Netlify production (legacy)
     'https://jft-web-frontend.onrender.com', // Render production
+    'https://app.dichvumarketing.site', // Custom production
     ...(process.env.CORS_ORIGIN?.split(',') || []),
   ];
   app.enableCors({
