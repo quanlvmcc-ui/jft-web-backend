@@ -1,15 +1,15 @@
 import { CookieOptions } from 'express';
 
 // Cookie configuration for custom domain
-// Production: sameSite=none, secure=true, domain=.dichvumarketing.site
+// Production: sameSite=lax, secure=true, domain=.vjlink-edu.online
 // Development: sameSite=lax, secure=false
 export const baseAuthCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  sameSite: 'lax',
   path: '/',
   ...(process.env.NODE_ENV === 'production' && {
-    domain: '.dichvumarketing.site',
+    domain: '.vjlink-edu.online',
   }),
 };
 
