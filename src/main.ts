@@ -9,7 +9,8 @@ async function bootstrap() {
   // Hỗ trợ multiple origins: local development, Render production, Netlify, etc.
   const allowedOrigins = [
     'http://localhost:3001', // Local development
-    'https://amazing-moxie-d28a64.netlify.app', // Netlify production
+    'https://amazing-moxie-d28a64.netlify.app', // Netlify production (legacy)
+    'https://jft-web-frontend.onrender.com', // Render production
     ...(process.env.CORS_ORIGIN?.split(',') || []),
   ];
   app.enableCors({
