@@ -7,8 +7,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const allowedOrigins = [
-    'http://localhost:3001', // Local development
-    'https://app.vjlink-edu.online', // Production frontend
+    'http://localhost:3001',
+    'https://vjlink-edu.online',
+    'https://www.vjlink-edu.online',
     ...(process.env.CORS_ORIGIN?.split(',') || []),
   ];
 
