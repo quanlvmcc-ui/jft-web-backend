@@ -1,26 +1,42 @@
-FROM node:20-slim AS builder
+# ==============================
+# Stage 1 — Build
+# ==============================
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
+# Cài openssl (đảm bảo runtime detect đúng)
+RUN apt-get update -y && apt-get install -y openssl
+
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
-COPY . .
+# Cài dependencies chuẩn CI
+RUN npm ci
 
-# Generate prisma đúng binary target
+# Copy prisma trước để generate engine
+COPY prisma ./prisma
+
+# Generate Prisma Client
 RUN npx prisma generate
 
+# Copy source code
+COPY . .
+
+# Build NestJS
 RUN npm run build
 
-# ==============================
-# Production
-# ==============================
 
-FROM node:20-slim
+# ==============================
+# Stage 2 — Runtime
+# ==============================
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
-COPY --from=builder /app/package*.json ./
+RUN apt-get update -y && apt-get install -y openssl
+
+# Copy từ builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
