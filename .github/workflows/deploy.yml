@@ -1,0 +1,51 @@
+name: 🚀 Deploy Backend to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 🚀 Deploy to VPS
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key $USER@$HOST << 'EOF'
+            set -e
+
+            echo "📥 Pull latest backend code..."
+            cd /var/www/jft/backend
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "🐳 Rebuild backend container..."
+            cd /var/www/jft-deploy
+            docker compose up -d --build backend
+
+            echo "🗄 Running Prisma migrations..."
+            docker compose exec -T backend npx prisma migrate deploy
+
+            echo "🧹 Cleaning old images..."
+            docker image prune -f
+
+            echo "📊 Container status:"
+            docker compose ps backend
+
+            echo "✅ Backend deployment completed!"
+          EOF
