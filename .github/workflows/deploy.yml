@@ -39,7 +39,7 @@ jobs:
             docker compose up -d --build backend
 
             echo "🗄 Running Prisma migrations..."
-            docker compose exec -T backend npx prisma migrate deploy
+            docker compose run --rm backend npx prisma migrate deploy
 
             echo "🧹 Cleaning old images..."
             docker image prune -f
