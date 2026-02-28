@@ -8,8 +8,12 @@ async function bootstrap() {
 
   const allowedOrigins = [
     'http://localhost:3001',
+    'http://localhost:3000',
     'https://vjlink-edu.online',
     'https://www.vjlink-edu.online',
+    'https://app.vjlink-edu.online',
+    'https://backend.vjlink-edu.online',
+    'https://api.vjlink-edu.online',
     ...(process.env.CORS_ORIGIN?.split(',') || []),
   ];
 
