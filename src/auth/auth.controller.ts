@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -23,11 +24,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -39,6 +42,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,

@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ExamsService } from './exams.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Role } from '../auth/enum/role.enum';
@@ -60,6 +61,7 @@ export class ExamsController {
 
   @Post(':id/submit')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   submitExam(@Req() request: RequestWithUser, @Param('id') examId: string) {
     return this.examsService.submitExam(request.user.sub, examId);
   }
@@ -80,6 +82,7 @@ export class ExamsController {
    */
   @Put('sessions/:sessionId/answers')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 180, ttl: 60000 } })
   saveAnswer(
     @Req() request: RequestWithUser,
     @Param('sessionId') sessionId: string,
@@ -94,6 +97,7 @@ export class ExamsController {
 
   @Post(':id/sessions')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   startExamSession(
     @Req() request: RequestWithUser,
     @Param('id') examId: string,

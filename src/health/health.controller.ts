@@ -1,4 +1,5 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HealthService, HealthCheckResponse } from './health.service';
 
 @Controller('health')
@@ -28,6 +29,7 @@ export class HealthController {
    * }
    */
   @Get()
+  @SkipThrottle()
   async getHealth(): Promise<HealthCheckResponse> {
     const health = await this.healthService.check();
 
