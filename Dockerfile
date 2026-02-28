@@ -23,6 +23,9 @@ RUN npx prisma generate
 # Copy source code
 COPY . .
 
+# Clean build cache to ensure fresh compilation
+RUN rm -f tsconfig.build.tsbuildinfo
+
 # Build NestJS
 RUN npm run build
 
