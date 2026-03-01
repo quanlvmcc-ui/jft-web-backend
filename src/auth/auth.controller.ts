@@ -32,10 +32,10 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
-    @Req() request: Request,
+    @Body() loginBody: any,
     @Res({ passthrough: true }) response: Response,
   ): Promise<LoginResponse> {
-    const body = LoginBodySchema.parse(request.body);
+    const body = LoginBodySchema.parse(loginBody);
     await this.authService.login(body, response);
 
     return LoginResponseSchema.parse({ success: true });
