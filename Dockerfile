@@ -43,10 +43,13 @@ RUN apt-get update -y && apt-get install -y openssl curl
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/seed-test-exam.js ./seed-test-exam.js
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-CMD npx prisma migrate deploy && node dist/main.js
+CMD ["sh", "docker-entrypoint.sh"]
