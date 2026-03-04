@@ -64,12 +64,6 @@ model User {
   password String
   role     UserRole @default(USER)
 
-  // ✅ UC-08: Profile fields
-  displayName String?           // Họ tên đầy đủ (VD: "Nguyễn Văn A")
-  phoneNumber String?           // Số điện thoại (optional)
-  bio         String?  @db.Text // Giới thiệu ngắn
-  avatarUrl   String?           // Đường dẫn avatar: /avatars/user-123.jpg
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime? // soft delete
