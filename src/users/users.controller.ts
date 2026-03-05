@@ -17,9 +17,11 @@ import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { UploadedFile, UseInterceptors } from '@nestjs/common';
 import { UploadAvatarResponse } from './dto/upload-avatar.dto';
 import { avatarUploadInterceptorOptions } from '../config/multer.config';
+import type { Express } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -68,11 +70,11 @@ export class UsersController {
   @Post('/me/avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FileInterceptor('file', avatarUploadInterceptorOptions as any),
+    FileInterceptor('file', avatarUploadInterceptorOptions as MulterOptions),
   )
   uploadAvatar(
     @Req() request: RequestWithUser,
-    @UploadedFile() file: any,
+    @UploadedFile() file: Express.Multer.File,
   ): UploadAvatarResponse {
     // Kiểm tra file có tồn tại không
     if (!file) {

@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
   // Disable default body parser để Multer có thể xử lý multipart
@@ -55,21 +56,27 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Thêm manual body parser NHƯNG skip cho /avatar routes
-  // @ts-ignore - Express middleware with any types
-  app.use((req: any, res: any, next: any) => {
-    // @ts-ignore - Header check
-    const contentType = req.headers['content-type'] || '';
-    // Nếu là multipart/form-data, skip JSON parser
-    // @ts-ignore - String check
-    if (contentType.includes('multipart/form-data')) {
-      // @ts-ignore - Next function
-      return next();
-    }
-    // Ngược lại, apply JSON parser
-    // @ts-ignore - Express middleware
-    express.json({ limit: '10mb' })(req, res, next);
+  const jsonParser = express.json({ limit: '10mb' });
+  const urlencodedParser = express.urlencoded({
+    limit: '10mb',
+    extended: true,
   });
-  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const contentTypeHeader = req.headers['content-type'];
+    const contentType = Array.isArray(contentTypeHeader)
+      ? contentTypeHeader.join(';')
+      : (contentTypeHeader ?? '');
+    const isMultipart = contentType.includes('multipart/form-data');
+
+    if (isMultipart) {
+      next();
+      return;
+    }
+
+    jsonParser(req, res, next);
+  });
+  app.use(urlencodedParser);
 
   // Serve static files
   app.useStaticAssets(join(__dirname, '..', 'public'), {
