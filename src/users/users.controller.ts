@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -15,6 +16,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadedFile, UseInterceptors } from '@nestjs/common';
+import { UploadAvatarResponse } from './dto/upload-avatar.dto';
+import { avatarUploadInterceptorOptions } from '../config/multer.config';
 
 @Controller('users')
 export class UsersController {
@@ -58,5 +63,32 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   getExamHistory(@Req() request: RequestWithUser) {
     return this.usersService.getExamHistory(request.user.sub);
+  }
+
+  @Post('/me/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', avatarUploadInterceptorOptions as any),
+  )
+  uploadAvatar(
+    @Req() request: RequestWithUser,
+    @UploadedFile() file: any,
+  ): UploadAvatarResponse {
+    // Kiểm tra file có tồn tại không
+    if (!file) {
+      throw new BadRequestException('Vui lòng chọn ảnh để upload');
+    }
+
+    // Tạo absolute URL với backend domain
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = request.get('host') || 'localhost:3000';
+    const avatarUrl = `${protocol}://${host}/public/avatars/${file.filename}`;
+
+    // Trả về response
+    return {
+      avatarUrl,
+      filename: file.filename,
+      uploadedAt: new Date().toISOString(),
+    };
   }
 }

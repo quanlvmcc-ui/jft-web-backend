@@ -3,9 +3,15 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Disable default body parser để Multer có thể xử lý multipart
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
 
   // 🛡️ Security: Helmet - Set HTTP security headers
   app.use(
@@ -48,6 +54,28 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Thêm manual body parser NHƯNG skip cho /avatar routes
+  // @ts-ignore - Express middleware with any types
+  app.use((req: any, res: any, next: any) => {
+    // @ts-ignore - Header check
+    const contentType = req.headers['content-type'] || '';
+    // Nếu là multipart/form-data, skip JSON parser
+    // @ts-ignore - String check
+    if (contentType.includes('multipart/form-data')) {
+      // @ts-ignore - Next function
+      return next();
+    }
+    // Ngược lại, apply JSON parser
+    // @ts-ignore - Express middleware
+    express.json({ limit: '10mb' })(req, res, next);
+  });
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  // Serve static files
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/public',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -59,4 +87,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 
-bootstrap();
+void bootstrap();
