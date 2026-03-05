@@ -3,9 +3,16 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as express from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Disable default body parser để Multer có thể xử lý multipart
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
 
   // 🛡️ Security: Helmet - Set HTTP security headers
   app.use(
@@ -48,6 +55,34 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Thêm manual body parser NHƯNG skip cho /avatar routes
+  const jsonParser = express.json({ limit: '10mb' });
+  const urlencodedParser = express.urlencoded({
+    limit: '10mb',
+    extended: true,
+  });
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const contentTypeHeader = req.headers['content-type'];
+    const contentType = Array.isArray(contentTypeHeader)
+      ? contentTypeHeader.join(';')
+      : (contentTypeHeader ?? '');
+    const isMultipart = contentType.includes('multipart/form-data');
+
+    if (isMultipart) {
+      next();
+      return;
+    }
+
+    jsonParser(req, res, next);
+  });
+  app.use(urlencodedParser);
+
+  // Serve static files
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/public',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -59,4 +94,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 
-bootstrap();
+void bootstrap();

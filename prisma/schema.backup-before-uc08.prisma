@@ -13,7 +13,7 @@ datasource db {
 
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["debian-openssl-3.0.x", "darwin-arm64", "linux-arm64-openssl-3.0.x"]
+  binaryTargets = ["debian-openssl-3.0.x", "darwin-arm64"]
 }
 
 // ============================================
@@ -63,12 +63,6 @@ model User {
   email    String   @unique
   password String
   role     UserRole @default(USER)
-
-  // ✅ UC-08: Profile fields
-  displayName String?           // Họ tên đầy đủ (VD: "Nguyễn Văn A")
-  phoneNumber String?           // Số điện thoại (optional)
-  bio         String?  @db.Text // Giới thiệu ngắn
-  avatarUrl   String?           // Đường dẫn avatar: /avatars/user-123.jpg
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

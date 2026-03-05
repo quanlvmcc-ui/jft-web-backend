@@ -63,3 +63,7 @@ prisma/**/*.js
 prisma/**/*.js.map
 seed-test-exam.js
 seed-test-exam.js.map
+
+# User Uploads - Ignore uploaded files nhưng giữ folder structure
+/public/avatars/*
+!/public/avatars/.gitkeep
