@@ -103,6 +103,10 @@ model RefreshToken {
 
 model Question {
   id          String         @id @default(uuid())
+
+  // ✅ UC-06: Metadata fields
+  title       String @default("Untitled Question") // Tiêu đề câu hỏi (VD: "Từ vựng Unit 1")
+
   sectionType SectionType // Phần thi: Script/Vocabulary, Conversation, Listening, Reading
   contentHtml String         @db.Text // Nội dung câu hỏi (HTML)
   explanationHtml String?    @db.Text // Giải thích đáp án

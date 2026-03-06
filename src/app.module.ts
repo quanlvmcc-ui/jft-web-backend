@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ExamsModule } from './exams/exams.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
+import { QuestionsModule } from './questions/questions.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module';
     ExamsModule,
     HealthModule,
     UsersModule,
+    QuestionsModule, // ✅ UC-06: Questions Management
   ],
   controllers: [AppController],
   providers: [
