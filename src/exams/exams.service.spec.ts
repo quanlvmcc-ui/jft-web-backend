@@ -278,7 +278,7 @@ describe('ExamsService', () => {
 
       jest.spyOn(prisma, '$transaction').mockImplementation(transactionMock);
 
-      await service.submitExam(mockUserId, mockExamId, submitDto as any);
+      await service.submitExam(mockUserId, mockExamId);
 
       expect(prisma.examSession.findFirst).toHaveBeenCalled();
       expect(transactionMock).toHaveBeenCalled();
@@ -287,9 +287,9 @@ describe('ExamsService', () => {
     it('should throw NotFoundException when no active session', async () => {
       jest.spyOn(prisma.examSession, 'findFirst').mockResolvedValue(null);
 
-      await expect(
-        service.submitExam(mockUserId, mockExamId, {} as any),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.submitExam(mockUserId, mockExamId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

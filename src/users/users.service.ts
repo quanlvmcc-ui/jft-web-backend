@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  Inject,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -11,15 +13,31 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
 import { ExamHistoryDto } from './dto/exam-history.dto';
 
+/** TTL cho cache user profile: 5 phút (đơn vị ms theo cache-manager v7/Keyv) */
+const USER_PROFILE_TTL_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) {}
+
+  /** Key quy ước: "user:{id}:profile" — dễ trace trên Redis CLI / RedisInsight */
+  private userProfileKey(userId: string): string {
+    return `user:${userId}:profile`;
+  }
 
   async getUserProfile(userId: string): Promise<UserProfileDto> {
+    const cacheKey = this.userProfileKey(userId);
+
+    // ------- 1. Cache HIT: trả ngay, không chạm DB -------
+    const cached = await this.cache.get<UserProfileDto>(cacheKey);
+    if (cached) return cached;
+
+    // ------- 2. Cache MISS: truy vấn PostgreSQL ----------
     const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -33,6 +51,10 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException(`User not found!`);
+
+    // ------- 3. Ghi vào cache với TTL 5 phút -------------
+    // Sau 5 phút Redis tự xóa key, request tiếp theo sẽ refresh từ DB
+    await this.cache.set(cacheKey, user, USER_PROFILE_TTL_MS);
 
     return user;
   }
@@ -67,6 +89,11 @@ export class UsersService {
         updatedAt: true,
       },
     });
+
+    // ------- Invalidate cache -------
+    // Profile đã thay đổi → xóa cache key
+    // Request GET /me tiếp theo sẽ chạy lại DB query và cache lại dữ liệu mới
+    await this.cache.del(this.userProfileKey(userId));
 
     return updatedUser;
   }

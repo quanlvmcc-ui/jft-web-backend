@@ -164,9 +164,28 @@ export class ExamsService {
       );
     }
 
-    // Step 2: Update session answers and submit in transaction
+    // Step 2: Submit in transaction with optimistic concurrency guard
 
     return this.prisma.$transaction(async (tx) => {
+      // Claim submit right atomically: only one concurrent request can flip
+      // IN_PROGRESS -> SUBMITTED. Others will receive count = 0.
+      const submitClaim = await tx.examSession.updateMany({
+        where: {
+          id: session.id,
+          userId,
+          examId,
+          status: ExamSessionStatus.IN_PROGRESS,
+        },
+        data: {
+          status: ExamSessionStatus.SUBMITTED,
+          submittedAt: new Date(),
+        },
+      });
+
+      if (submitClaim.count === 0) {
+        throw new BadRequestException('Session has already been submitted');
+      }
+
       let totalCorrect = 0;
       let totalWrong = 0;
       let totalUnanswered = 0;
@@ -222,13 +241,10 @@ export class ExamsService {
         });
       }
 
-      // Mark session as submitted
-
+      // Finalize scores (status/submittedAt already claimed above)
       return tx.examSession.update({
         where: { id: session.id },
         data: {
-          status: ExamSessionStatus.SUBMITTED,
-          submittedAt: new Date(),
           totalCorrect,
           totalWrong,
           totalUnanswered,
@@ -289,13 +305,15 @@ export class ExamsService {
       throw new NotFoundException('Question not found in this exam');
     }
 
-    // Step 4: Update answer using composite unique key (sessionId, questionId)
-    // Use update() instead of updateMany() because we have a unique constraint
-    const updatedAnswer = await this.prisma.examSessionAnswer.update({
+    // Step 4: Atomic update guarded by session status to prevent race with submit
+    const updatedCount = await this.prisma.examSessionAnswer.updateMany({
       where: {
-        sessionId_questionId: {
-          sessionId,
-          questionId: saveAnswerDto.questionId,
+        sessionId,
+        questionId: saveAnswerDto.questionId,
+        session: {
+          is: {
+            status: ExamSessionStatus.IN_PROGRESS,
+          },
         },
       },
       data: {
@@ -303,6 +321,25 @@ export class ExamsService {
         answeredAt: new Date(),
       },
     });
+
+    if (updatedCount.count === 0) {
+      throw new BadRequestException(
+        'Cannot save answer because session is no longer in progress',
+      );
+    }
+
+    const updatedAnswer = await this.prisma.examSessionAnswer.findUnique({
+      where: {
+        sessionId_questionId: {
+          sessionId,
+          questionId: saveAnswerDto.questionId,
+        },
+      },
+    });
+
+    if (!updatedAnswer) {
+      throw new NotFoundException('Answer not found');
+    }
 
     return updatedAnswer;
   }
